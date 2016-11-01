@@ -163,8 +163,8 @@ def process_event_file(args):
                 event.build_read_distribution(bamfiles, args.min_overhang,
                                               args.max_edit_distance,
                                               args.max_num_mapped_loci)
-                seralizer = open("event_splicing_seralized", "w")
-                pickle.dump(event, seralizer)                              
+                #seralizer = open("event_splicing_seralized", "w")
+                #pickle.dump(event, seralizer)
                 psi_event = event.bootstrap_event(args.n_bootstrap_samples,
                                                   args.n_grid_points,
                                                   args.a, args.b, args.r)

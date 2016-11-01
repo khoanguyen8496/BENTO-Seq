@@ -1,0 +1,87 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ALLSPHINXOPTS	doc/Makefile	/^ALLSPHINXOPTS   = -d $(BUILDDIR)\/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .$/;"	m
+ALLSPHINXOPTS	doc/make.bat	/^	set ALLSPHINXOPTS=-D latex_paper_size=%PAPER% %ALLSPHINXOPTS%$/;"	v
+ALLSPHINXOPTS	doc/make.bat	/^set ALLSPHINXOPTS=-d %BUILDDIR%\/doctrees %SPHINXOPTS% .$/;"	v
+AS_EVENTS	bento_seq/load_as_event_data.py	/^AS_EVENTS = {$/;"	v
+AltSpliceEvent	bento_seq/alt_splice_event.py	/^class AltSpliceEvent(object):$/;"	c
+BENTOSeqError	bento_seq/__init__.py	/^class BENTOSeqError(Exception):$/;"	c
+BUILDDIR	doc/Makefile	/^BUILDDIR      = _build$/;"	m
+BUILDDIR	doc/make.bat	/^set BUILDDIR=_build$/;"	v
+DATA_HOME	bento_seq/load_as_event_data.py	/^DATA_HOME = os.path.abspath($/;"	v
+EVENTS_ROOT	bento_seq/load_as_event_data.py	/^EVENTS_ROOT = 'http:\/\/www.psi.utoronto.ca\/~hannes\/bento-seq-events\/'$/;"	v
+I18NSPHINXOPTS	doc/Makefile	/^I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .$/;"	m
+I18NSPHINXOPTS	doc/make.bat	/^	set I18NSPHINXOPTS=-D latex_paper_size=%PAPER% %I18NSPHINXOPTS%$/;"	v
+I18NSPHINXOPTS	doc/make.bat	/^set I18NSPHINXOPTS=%SPHINXOPTS% .$/;"	v
+MOCK_MODULES	doc/conf.py	/^MOCK_MODULES = ['pysam', 'numpy']$/;"	v
+PAPER	doc/Makefile	/^PAPER         =$/;"	m
+PAPER	doc/make.bat	/^	echo.  latex      to make LaTeX files, you can set PAPER=a4 or PAPER=letter$/;"	v
+PAPEROPT_a4	doc/Makefile	/^PAPEROPT_a4     = -D latex_paper_size=a4$/;"	m
+PAPEROPT_letter	doc/Makefile	/^PAPEROPT_letter = -D latex_paper_size=letter$/;"	m
+ReadDistribution	bento_seq/read_distribution.py	/^class ReadDistribution(object):$/;"	c
+SPHINXBUILD	doc/Makefile	/^SPHINXBUILD   = sphinx-build$/;"	m
+SPHINXBUILD	doc/make.bat	/^	set SPHINXBUILD=sphinx-build$/;"	v
+SPHINXOPTS	doc/Makefile	/^SPHINXOPTS    =$/;"	m
+__getitem__	bento_seq/read_distribution.py	/^    def __getitem__(self, pos):$/;"	m	class:ReadDistribution	file:
+__init__	bento_seq/alt_splice_event.py	/^    def __init__(self, event_type, event_id, chromosome, strand, exons, one_based_pos=False):$/;"	m	class:AltSpliceEvent
+__init__	bento_seq/read_distribution.py	/^    def __init__(self, chromosome, start, end, read_length, read_distribution=None):$/;"	m	class:ReadDistribution
+__setitem__	bento_seq/read_distribution.py	/^    def __setitem__(self, pos, value):$/;"	m	class:ReadDistribution	file:
+__slots__	bento_seq/read_distribution.py	/^    __slots__ = ['_counter', '_read_ids', 'chromosome', 'start', 'end', 'read_length']$/;"	v	class:ReadDistribution
+author	setup.py	/^      author='Hannes Bretschneider',$/;"	v
+author_email	setup.py	/^      author_email='hannes@psi.utoronto.ca',$/;"	v
+bootstrap_event	bento_seq/alt_splice_event.py	/^    def bootstrap_event(self, n_bootstrap_samples=1000, n_grid_points=10000,$/;"	m	class:AltSpliceEvent
+build_read_distribution	bento_seq/alt_splice_event.py	/^    def build_read_distribution(self, bamfiles, min_overhang=5,$/;"	m	class:AltSpliceEvent
+clear_data_home	bento_seq/load_as_event_data.py	/^def clear_data_home():$/;"	f
+copyright	doc/conf.py	/^copyright = u'2014, Hannes Bretschneider'$/;"	v
+count_lines	bento_seq/load_as_event_data.py	/^def count_lines(filename, comment_char=None):$/;"	f
+description	setup.py	/^      description='Estimate the percent spliced-in ratio (PSI) '$/;"	v
+end	doc/make.bat	/^:end$/;"	l
+exclude_patterns	doc/conf.py	/^exclude_patterns = ['_build']$/;"	v
+extensions	doc/conf.py	/^extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax', 'sphinx.ext.intersphinx']$/;"	v
+fetch	bento_seq/load_as_event_data.py	/^def fetch(genome):$/;"	f
+find_junctions	bento_seq/read_distribution.py	/^find_junctions = re.compile(r'(\\d+)M(\\d+)N')        # Find splice junctions$/;"	v
+from_junction	bento_seq/read_distribution.py	/^    def from_junction(cls, bamfiles, junction,$/;"	m	class:ReadDistribution
+gen_pdf	bento_seq/bootstrap.py	/^def gen_pdf(inc, exc, n_bootstrap_samples=1000, n_grid_points=10000, a=1., b=1., r=0.):$/;"	f
+get_data_home	bento_seq/load_as_event_data.py	/^def get_data_home():$/;"	f
+get_positions	bento_seq/read_distribution.py	/^    def get_positions(self, min_overhang):$/;"	m	class:ReadDistribution
+has_junction	bento_seq/read_distribution.py	/^has_junction = re.compile(r'(\\d+)N')                # Read has junction$/;"	v
+html_static_path	doc/conf.py	/^html_static_path = ['_static']$/;"	v
+html_theme	doc/conf.py	/^html_theme = 'default'$/;"	v
+htmlhelp_basename	doc/conf.py	/^htmlhelp_basename = 'BootstrapPSIdoc'$/;"	v
+inc	bento_seq/read_distribution.py	/^    def inc(self, rel_pos, read):$/;"	m	class:ReadDistribution
+indel	bento_seq/read_distribution.py	/^indel = re.compile(r'(\\d+)[ID]')                    # Read contains indels$/;"	v
+indel_at_ss_left	bento_seq/read_distribution.py	/^indel_at_ss_left = re.compile(r'(\\d+)[ID](\\d+)N')   # Read has indel left of SS$/;"	v
+indel_at_ss_right	bento_seq/read_distribution.py	/^indel_at_ss_right = re.compile(r'(\\d+)N(\\d+)[ID]')  # Read has indel right of SS $/;"	v
+indel_right	bento_seq/read_distribution.py	/^indel_right = re.compile(r'(\\d+)M(\\d+)([ID])')      # Indel right of match$/;"	v
+install_requires	setup.py	/^      install_requires=['pysam', 'numpy']$/;"	v
+intersphinx_mapping	doc/conf.py	/^intersphinx_mapping = {'pysam': ('http:\/\/pysam.readthedocs.org\/en\/latest', None)}$/;"	v
+is_empty	bento_seq/read_distribution.py	/^    def is_empty(self):$/;"	m	class:ReadDistribution
+last_match	bento_seq/read_distribution.py	/^last_match = re.compile(r'(\\d+)M$')                 # Find last aligned segment$/;"	v
+latex_documents	doc/conf.py	/^latex_documents = [$/;"	v
+latex_elements	doc/conf.py	/^latex_elements = {$/;"	v
+man_pages	doc/conf.py	/^man_pages = [$/;"	v
+master_doc	doc/conf.py	/^master_doc = 'index'$/;"	v
+merge_cigar	bento_seq/read_distribution.py	/^merge_cigar = re.compile(r'(\\d+)M(\\d+)M')           # Merge consecutive matches$/;"	v
+open_event_file	bento_seq/load_as_event_data.py	/^def open_event_file(event_string):$/;"	f
+packages	setup.py	/^      packages=['bento_seq'],$/;"	v
+process_event_file	bin/bento-seq	/^def process_event_file(args):$/;"	f
+project	doc/conf.py	/^project = u'Bootstrap PSI'$/;"	v
+pygments_style	doc/conf.py	/^pygments_style = 'sphinx'$/;"	v
+release	doc/conf.py	/^release = version$/;"	v
+run_bootstrap	bin/bento-seq	/^def run_bootstrap():$/;"	f
+scripts	setup.py	/^      scripts=['bin\/bento-seq'],$/;"	v
+set_data_home	bento_seq/load_as_event_data.py	/^def set_data_home(newpath):$/;"	f
+soft_clipping_left	bento_seq/read_distribution.py	/^soft_clipping_left = re.compile(r'^(\\d+)S(\\d+)M')   # Read has soft-clipping on left side$/;"	v
+soft_clipping_right	bento_seq/read_distribution.py	/^soft_clipping_right = re.compile(r'(\\d+)M(\\d+)S$')  # Read has soft-clipping on right side$/;"	v
+source_suffix	doc/conf.py	/^source_suffix = '.rst'$/;"	v
+templates_path	doc/conf.py	/^templates_path = ['_templates']$/;"	v
+texinfo_documents	doc/conf.py	/^texinfo_documents = [$/;"	v
+to_list	bento_seq/read_distribution.py	/^    def to_list(self, min_overhang=0):$/;"	m	class:ReadDistribution
+trim_reads	bento_seq/alt_splice_event.py	/^    def trim_reads(self, reads, read_length,$/;"	m	class:AltSpliceEvent
+tstart	bento_seq/bootstrap.py	/^tstart = datetime.now()$/;"	v
+version	bento_seq/version.py	/^version = '0.1dev'$/;"	v
+version	setup.py	/^      version=version,$/;"	v

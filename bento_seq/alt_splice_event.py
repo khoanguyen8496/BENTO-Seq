@@ -39,13 +39,13 @@ class AltSpliceEvent(object):
         option is True, then exon coordinates are converted to 0-based
         indexing on initialization. All internal calculations are
         based on 0-based coordinates.
-    
+
     """
 
-    
+
     def __init__(self, event_type, event_id, chromosome, strand, exons, one_based_pos=False):
         event_type = event_type.upper()
-        
+
         if event_type not in ('CAS', 'A5SS', 'A3SS', 'MXE', 'AFE', 'ALE', 'SPR'):
             raise BENTOSeqError("Unknown alternative splicing event type: %s" % str(event_type))
 
@@ -121,7 +121,7 @@ class AltSpliceEvent(object):
                    self.exons[2][0] > self.exons[0][1] and
                    self.exons[3][0] > self.exons[2][1]):
                 raise BENTOSeqError("Event is not a valid MEX event.")
-            
+
         elif self.event_type == 'AFE':
             if not (self.exons[2][0] > self.exons[0][1] and
                     self.exons[2][0] > self.exons[1][1]):
@@ -162,7 +162,7 @@ class AltSpliceEvent(object):
             alowed.
 
         """
-    
+
         self.junction_read_distributions = []
         for junction in self.junctions:
             read_distribution = \
@@ -188,19 +188,19 @@ class AltSpliceEvent(object):
             self.junction_read_distributions[0] = self.trim_reads(
                 self.junction_read_distributions[0], read_length,
                 min_overhang, self.exons_lengths[1])
-            
+
             self.reads_inc = self.junction_read_distributions[0] + \
                               self.junction_read_distributions[1]
             self.reads_exc = self.junction_read_distributions[2]
-            
+
         elif self.event_type == 'A5SS':
             self.reads_inc = self.junction_read_distributions[1]
             self.reads_exc = self.junction_read_distributions[2]
-            
+
         elif self.event_type == 'A3SS':
             self.reads_inc = self.junction_read_distributions[0]
             self.reads_exc = self.junction_read_distributions[2]
-            
+
         elif self.event_type == 'MXE':
             self.junction_read_distributions[0] = self.trim_reads(
                 self.junction_read_distributions[0], read_length,
@@ -212,7 +212,7 @@ class AltSpliceEvent(object):
                               self.junction_read_distributions[3]
             self.reads_exc = self.junction_read_distributions[1] + \
                               self.junction_read_distributions[4]
-            
+
         elif self.event_type == 'AFE':
             self.junction_read_distributions[2] = self.trim_reads(
                 self.junction_read_distributions[2], read_length,
@@ -220,10 +220,10 @@ class AltSpliceEvent(object):
             self.junction_read_distributions[1] = self.trim_reads(
                 self.junction_read_distributions[1], read_length,
                 min_overhang, self.exons_lengths[1])
-            
+
             self.reads_inc = self.junction_read_distributions[1]
             self.reads_exc = self.junction_read_distributions[2]
-            
+
         elif self.event_type == 'ALE':
             self.junction_read_distributions[0] = self.trim_reads(
                 self.junction_read_distributions[0], read_length,
@@ -231,14 +231,14 @@ class AltSpliceEvent(object):
             self.junction_read_distributions[2] = self.trim_reads(
                 self.junction_read_distributions[2], read_length,
                 min_overhang, self.exons_lengths[2])
-            
+
             self.reads_inc = self.junction_read_distributions[0]
             self.reads_exc = self.junction_read_distributions[2]
-            
+
         elif self.event_type == 'SPR':
             self.reads_inc = self.junction_read_distributions[0]
             self.reads_exc = self.junction_read_distributions[2]
-            
+
         else:
             raise BENTOSeqError
 
@@ -254,17 +254,17 @@ class AltSpliceEvent(object):
             trim = read_length - min_overhang - exon_length
         else:
             raise BENTOSeqError
-        
+
         if trim > 0:
-            if event_type in ('CAS', 'MXE', 'ALE'):        
+            if event_type in ('CAS', 'MXE', 'ALE'):
                 reads = reads[:-trim]
             elif event_type == 'AFE':
                 reads = reads[-trim:]
             else:
                 raise BENTOSeqError
         return reads
-        
-    def bootstrap_event(self, n_bootstrap_samples=1000, n_grid_points=100,
+
+    def bootstrap_event(self, n_bootstrap_samples=1000, n_grid_points=10000,
                         a=1, b=1, r=0):
 
         """Estimate PSI (percent spliced-in) value for this event.
@@ -311,7 +311,7 @@ class AltSpliceEvent(object):
         psi_bootstrap_std : float
             Estimated standard deviation of ``psi_bootstrap``.
         """
-    
+
         reads_inc = np.array(self.reads_inc)
         reads_exc = np.array(self.reads_exc)
 
@@ -328,7 +328,7 @@ class AltSpliceEvent(object):
         psi_standard = (scaled_inc + 1) / (scaled_inc + scaled_exc + 2)
 
         pdf, grid = gen_pdf(reads_inc, reads_exc,
-                            n_bootstrap_samples, n_grid_points, a, b, r)
+                    n_bootstrap_samples, n_grid_points, a, b, r)
 
         psi_total = simps(pdf, grid)
         psi_bootstrap = np.sum(pdf * grid)
