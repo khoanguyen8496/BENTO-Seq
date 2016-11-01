@@ -5,6 +5,7 @@ from scipy.integrate import simps
 from bento_seq import BENTOSeqError
 from bento_seq.alt_splice_event import AltSpliceEvent
 from bento_seq.load_as_event_data import open_event_file, fetch, count_lines
+import pickle
 
 # def _warning(
 #     message,
@@ -159,6 +160,8 @@ def process_event_file(args):
                 event = AltSpliceEvent(event_type, event_id, chromosome,
                                        strand, exons,
                                        one_based_pos=not args.zero_based_coordinates)
+                seralizer = open("event_splicing_seralized", "w")
+                pickle.dump(event, seralizer)
                 event.build_read_distribution(bamfiles, args.min_overhang,
                                               args.max_edit_distance,
                                               args.max_num_mapped_loci)
@@ -180,4 +183,3 @@ def process_event_file(args):
 
 if __name__ == '__main__':
     sys.exit(run_bootstrap())
-
