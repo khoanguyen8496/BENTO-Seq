@@ -330,10 +330,10 @@ class AltSpliceEvent(object):
         pdf, grid = gen_pdf(reads_inc, reads_exc,
                     n_bootstrap_samples, n_grid_points, a, b, r)
 
-        psi_total = simps(pdf, grid)
+        #psi_total = simps(pdf, grid)*n_grid_points
         psi_bootstrap = np.sum(pdf * grid)
         psi_std = np.sqrt(np.sum(pdf * np.square(grid - psi_bootstrap)))
-        psi_first = simps(pdf[:n_grid_points//3], grid[:n_grid_points//3])
-        psi_second = simps(pdf[n_grid_points//3:n_grid_points*2//3], grid[n_grid_points//3:n_grid_points*2//3])
-        psi_third = simps(pdf[-n_grid_points*2//3:], grid[-n_grid_points*2//3:])
-        return n_inc, n_exc, p_inc, p_exc, psi_standard, psi_bootstrap, psi_std, psi_first, psi_second, psi_third, psi_total
+        psi_first = simps(pdf[:n_grid_points//3], grid[:n_grid_points//3])*n_grid_points
+        psi_second = simps(pdf[n_grid_points//3:n_grid_points*2//3], grid[n_grid_points//3:n_grid_points*2//3])*n_grid_points
+        psi_third = simps(pdf[-n_grid_points*2//3:], grid[-n_grid_points*2//3:])*n_grid_points
+        return n_inc, n_exc, p_inc, p_exc, psi_standard, psi_bootstrap, psi_std, psi_first, psi_second, psi_third
