@@ -118,10 +118,10 @@ def main(fcases, fcontrols,serializedObject=None,
         :return:
         """
         if not any([os.path.exists(f) for f in [fcontrols, fcases]]):
-            fcontrols, fcases = fcontrols.strip().split(","), fcases.strip().split(",")
-            return fcontrols, fcases
-        fcontrols, fcases = open(fcontrols).read().strip().split("\n"), open(fcases).read().strip().split("\n")
-        return fcontrols, fcases
+            fcases, fcontrols = fcontrols.strip().split(","), fcases.strip().split(",")
+            return fcases, fcontrols
+        fcases, fcontrols = open(fcontrols).read().strip().split("\n"), open(fcases).read().strip().split("\n")
+        return fcases, fcontrols
     def _isSerialied(serializedObject, cases, controls):
         """
         load serialized splicing results if presented
@@ -230,5 +230,5 @@ if __name__ == "__main__":
     if args.cmd =="index":
         exit(index(args.files, serializedObject=args.outfile, threads=args.ThreadsN))
     if args.cmd == "compute":
-        exit(main(fcases=args.cases, fcontrol=args.controls, serializedObject=args.serialized_bin, threads=args.ThreadsN,
+        exit(main(fcases=args.cases, fcontrols=args.controls, serializedObject=args.serialized_bin, threads=args.ThreadsN,
                   base_data=args.base_data, fileOut=args.outfile))
