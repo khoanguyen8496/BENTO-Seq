@@ -227,5 +227,5 @@ if __name__ == "__main__":
     if args.cmd =="index":
         exit(index(args.files, serializedObject=args.outfile, threads=args.ThreadsN))
     if args.cmd == "compute":
-        exit(main(fcases=args.cases, fcontrol=args.controls, serializedObject=args.serialized_bin, threads=args.ThreadsN,
+        exit(main(fcases=args.cases, fcontrols=args.controls, serializedObject=args.serialized_bin, threads=args.ThreadsN,
                   base_data=args.base_data))
