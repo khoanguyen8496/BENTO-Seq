@@ -100,7 +100,10 @@ def _pairwiseCompute(arg):
     return coordGet(p_dist, len(mat1))
 
 def main(fcases, fcontrols,serializedObject=None,
-         base_data="/raid/ptdtan/base_data.json", threads=20, oLogger=oLogger):
+         base_data="/raid/ptdtan/base_data.json",
+         threads=20,
+         oLogger=oLogger,
+         fileOut="splicing_result.tsv"):
     """
     main instance for different splicing
     :param fcases:
@@ -177,8 +180,8 @@ def main(fcases, fcontrols,serializedObject=None,
             "y": coords[i][1]
         })
     map(updateJSON, range(len(keys)))
-
-    return base_Data
+    write_data(base_Data, fileOut=fileOut)
+    pass
 def write_data(base_Data, fileOut="splicing_result.tsv"):
     """
     fout = json.dump
@@ -227,5 +230,5 @@ if __name__ == "__main__":
     if args.cmd =="index":
         exit(index(args.files, serializedObject=args.outfile, threads=args.ThreadsN))
     if args.cmd == "compute":
-        exit(main(fcases=args.cases, fcontrols=args.controls, serializedObject=args.serialized_bin, threads=args.ThreadsN,
-                  base_data=args.base_data))
+        exit(main(fcases=args.cases, fcontrol=args.controls, serializedObject=args.serialized_bin, threads=args.ThreadsN,
+                  base_data=args.base_data, fileOut=args.outfile))
