@@ -3,16 +3,41 @@ import math
 import pandas as pd
 import json
 import logger as Logger
+import os
+import pickle
+import argparse
+import sys, traceback
 
 from sklearn.neighbors import DistanceMetric
 from multiprocessing import Pool
 from contextlib import closing
 from scipy import stats
 from statsmodels.sandbox.stats.multicomp import multipletests
-from time import time
+from collections import defaultdict
 
-diagonal_d = lambda x, y: abs(x-y)/math.sqrt(2)
+diagonal_d = lambda x: abs(x[0]-x[1])/math.sqrt(2)
 oLogger = Logger.LogInstance("splicing_log.txt")
+
+def index(falls, serializedObject="/raid/ptdtan/splicing_db.bin", threads=20):
+    """
+    index splicing database for fast computing
+    :param fall:
+    :param serializedObject:
+    :return:
+    """
+    Oall = batch_parser(open(falls).read().strip().split("\n"), threads=threads)
+    pickle.dump(Oall, open(serializedObject, "wb"))
+    pass
+
+def debugException(exc_type, exc_value, exc_traceback):
+    formatted_lines = traceback.format_exc().splitlines()
+    oLogger.debug(formatted_lines[0])
+    oLogger.debug(formatted_lines[-1])
+    oLogger.debug(repr(traceback.format_exception(exc_type, exc_value,
+                                          exc_traceback)))
+    oLogger.debug(repr(traceback.extract_tb(exc_traceback)))
+    oLogger.debug(repr(traceback.format_tb(exc_traceback)))
+    pass
 
 def hl_distance(p,q):
     """
@@ -29,24 +54,25 @@ def _read_file(file):
     ret = pd.read_csv(file, sep="\t").set_index("#ID").transpose().to_dict()
     return ret
 
-def batch_parser(fileBatch, oLogger=oLogger, threads=20):
+def batch_parser(batches, oLogger=oLogger, threads=20):
     """
     :param fileBatch: file contain paths of splicing result for all samples
     :return:
     """
-    start=time()
-    oLogger.info("Parsing splicing results file..")
-    batch = pd.read_csv(fileBatch, sep="\t", header=None).to_dict()[0]
+    oLogger.info("Parsing splicing results files..")
     with closing(Pool(processes=threads)) as pool:
-        dummies = pool.map(_read_file, batch.values())
+        dummies = pool.map(_read_file, batches)
         pool.close()
         pool.terminate()
-    splicing_batches = dict(zip(batch.keys(), dummies))
+    oLogger.info("Done reading files. Reducing")
+    splicing_batches = dict(zip([file.split("/")[-1] for file in batches], dummies))
     dummy_keys = dummies[0].keys()
-    arrPSIs = reduce(list.__add__, [ [(batch[key]["PSI_bootstrap"],batch[key]["PSI_bootstrap_std"])]\
-                                                  for batch in (splicing_batches.values()) for key in dummy_keys])
-    print time()-start
-    return dict(zip(dummy_keys, arrPSIs))
+    mainFrame = defaultdict(list)
+    for key in dummy_keys:
+        mainFrame[key] = dict(zip(splicing_batches.keys(), [(batch[key]["PSI_bootstrap"],batch[key]["PSI_bootstrap_std"]) \
+                                                            for batch in splicing_batches.values()]))
+    oLogger.info("Done reducing..")
+    return mainFrame
 
 def coordGet(distMat, size_1):
     """
@@ -60,44 +86,77 @@ def coordGet(distMat, size_1):
     block2  = reduce(list.__add__,[list(x)[size_1:] for x in [y for y in list(distMat)[size_1:]]], [])
     return (np.mean(block1), np.mean(block2))
 
-def main(fcontrol, fcases, control, cases, base_data="/raid/ptdtan/base_data.json", threads=20, oLogger=oLogger):
+def _pairwiseCompute(arg):
+    """
+    compute pairwise distances of all distributions, which were represented as means and stds
+    :param disMat:
+    :return
+    """
+    mat1, mat2, idx = arg
+    oLogger.info("Computing exons ID: %s" %idx)
+    distMat = mat1 + mat2
+    dist = DistanceMetric.get_metric("pyfunc", func=hl_distance)
+    p_dist = dist.pairwise(distMat)
+    return coordGet(p_dist, len(mat1))
+
+def main(fcases, fcontrols,serializedObject=None,
+         base_data="/raid/ptdtan/base_data.json", threads=20, oLogger=oLogger):
     """
     main instance for different splicing
     :param fcases:
     :param fcontrol:
     :return:
     """
-    oLogger.info("Parsing splicing result file: %s" %(fcases))
-    mainFrame1 = batch_parser(fcases)
-    oLogger.info("Parsing splicing result file: %s" %(fcontrol))
-    mainFrame2 = batch_parser(fcontrol)
-
-    keys = mainFrame1.keys()
-    base_Data = json.load(open(base_data))
-
-    def _pairwiseCompute(id):
+    def _parser(fcases, fcontrols):
         """
-        compute pairwise distances of all distributions, which were represented as means and stds
-        :param disMat:
+        parse list of file or file of files
+        :param fcontrols:
+        :param fcases:
         :return:
         """
-        #oLogger.info("Computing exons ID: %s" %id)
-        mat1, mat2 = mainFrame1[id].values(), mainFrame2[id].values()
-        distMat = mat1 + mat2
-        dist = DistanceMetric.get_metric("pyfunc", func=hl_distance)
-        p_dist = dist.pairwise(distMat)
-        return coordGet(p_dist, len(mat1))
-
+        if not any([os.path.exists(f) for f in [fcontrols, fcases]]):
+            fcontrols, fcases = fcontrols.strip().split(","), fcases.strip().split(",")
+            return fcontrols, fcases
+        fcontrols, fcases = open(fcontrols).read().strip().split("\n"), open(fcases).read().strip().split("\n")
+        return fcontrols, fcases
+    def _isSerialied(serializedObject, cases, controls):
+        """
+        load serialized splicing results if presented
+        :param serializedObject:
+        :return:
+        """
+        try:
+            if not serializedObject:
+                oLogger.info("Parsing splicing result file: %s" % (fcases))
+                mainFrame1 = batch_parser(cases)
+                oLogger.info("Parsing splicing result file: %s" % (fcontrols))
+                mainFrame2 = batch_parser(controls)
+            else:
+                mainFrame = pickle.load(open(serializedObject))
+                k_cases, k_controls = [x.strip().split("/")[-1] for x in cases], [x.strip().split("/")[-1] for x in controls]
+                mainFrame1 = {key:[mainFrame[key][sample] for sample in k_cases] for key in mainFrame.keys()}
+                mainFrame2 = {key: [mainFrame[key][sample] for sample in k_controls] for key in mainFrame.keys()}
+        except Exception as err:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            debugException(exc_type, exc_obj, exc_tb)
+        return mainFrame1, mainFrame2
+    try:
+        fcases, fcontrols = _parser(fcases, fcontrols)
+        mainFrame1, mainFrame2 = _isSerialied(serializedObject, fcases, fcontrols)
+    except Exception as err:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        debugException(exc_type, exc_obj, exc_tb)
+    keys = mainFrame1.keys()
+    base_Data = json.load(open(base_data))
     with closing(Pool(processes=threads)) as pool:
-        coords = pool.map(_pairwiseCompute, mainFrame1.keys())
+        coords = pool.map(_pairwiseCompute, [(mainFrame1[idx], mainFrame2[idx], idx) \
+                                                for idx in mainFrame1.keys()])
         pool.close()
         pool.terminate()
-
     d = np.array(map(diagonal_d, coords)) #distances
     z = (d-np.mean(d))/np.std(d) #z-scores
     p_vals = stats.norm.sf(abs(z))
     p_adjs = multipletests(p_vals, method="fdr_tsbh") #False discovery rate, two-stage Benjamini/Hochberg
-
     def updateJSON(i):
         """
         update JSON data
@@ -107,8 +166,8 @@ def main(fcontrol, fcases, control, cases, base_data="/raid/ptdtan/base_data.jso
         uKey = keys[i]
         base_Data[uKey].update({
             "PSI_mean":{
-                cases:np.mean([x for x,y in mainFrame1[uKey].values()]),
-                control:np.mean([x for x,y in mainFrame2[uKey].values()]),
+                1:np.mean([x for x,y in mainFrame1[uKey]]),
+                2:np.mean([x for x,y in mainFrame2[uKey]]),
             },
             "distance": d[i],
             "z-score": z[i],
@@ -118,8 +177,8 @@ def main(fcontrol, fcases, control, cases, base_data="/raid/ptdtan/base_data.jso
             "y": coords[i][1]
         })
     map(updateJSON, range(len(keys)))
-    return base_Data
 
+    return base_Data
 def write_data(base_Data, fileOut="splicing_result.tsv"):
     """
     fout = json.dump
@@ -127,9 +186,46 @@ def write_data(base_Data, fileOut="splicing_result.tsv"):
     :return:
     """
     fout = open(fileOut, "w")
-    fout.write("gene\ttriplet\tstrand\tC1_start\tC1_end\tA_start\tA_end\tC2_start\tC2_end\tPSI_mean %s\tPSI_mean %s\tdistance\tz-score\tp_val\tp_adjs\tx\ty\n" %(cases, control))
+    fout.write("gene\ttriplet\tstrand\tC1_start\tC1_end\tA_start\tA_end\tC2_start\tC2_end\tPSI_mean_1\tPSI_mean_2\tdistance\tz-score\tp_val\tp_adjs\tx\ty\n")
     for key, value in base_Data.items():
-        fout.write("%s\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\n" %(value["gene"], value["triplet"], value["strand"], value["C1_start"], value["C1_end"], value["A_start"], value["A_end"], value["C2_start"], value["C2_end"], value["PSI_mean"][cases], value["PSI_mean"][control], value["distance"], value["z-score"], value["p_val"], value["p_adjs"], value["x"], value["y"]))
+        fout.write("%s\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\n" %(value["gene"], value["triplet"], value["strand"], value["C1_start"], value["C1_end"], value["A_start"], value["A_end"], value["C2_start"], value["C2_end"], value["PSI_mean"][1], value["PSI_mean"][2], value["distance"], value["z-score"], value["p_val"], value["p_adjs"], value["x"], value["y"]))
+if __name__ == "__main__":
+    main_parser = argparse.ArgumentParser(description='Zeus - Different exons splicing comparison')
+    subparsers = main_parser.add_subparsers(help='Zeus Utilities', dest="cmd")
+    main_parser.add_argument("--ThreadsN", "-t",
+                             type=int,
+                             help="Number of threads",
+                             default=20)
 
+    index_parser = subparsers.add_parser('index', help='Index all splicing results')
+    index_parser.add_argument("--files", "-i",
+                              type=str,
+                              required=True,
+                              help="file contained path of all splicing files in workspace")
+    index_parser.add_argument("--outfile", "-o",
+                              type=str,
+                              help="Output binary file of all index splicing result",
+                              default="./splicing_result.bin")
+    index_parser.set_defaults(which='index')
 
+    compute_parser = subparsers.add_parser('compute', help='Compute different splicing events')
+    compute_parser.add_argument("--outfile", "-o",
+                                type=str,
+                                help="Output binary file of all index splicing result",
+                                default="./splicing_result_2.bin")
+    compute_parser.add_argument('--controls', '-co', type=str,
+                                help='Input list of file, separated by "," or file of files controls',
+                                required=True)
+    compute_parser.add_argument('--cases', '-ca', type=str,
+                                help='Input list of file, separated by "," or file of files cases',
+                                required=True)
+    compute_parser.add_argument('--base-data', '-b', type=str, help='Annotation DB as JSON', required=True)
+    compute_parser.add_argument('--serialized-bin', '-sb', type=str, help='serialized bin', required=True)
+    compute_parser.set_defaults(which='compute')
 
+    args = main_parser.parse_args()
+    if args.cmd =="index":
+        exit(index(args.files, serializedObject=args.outfile, threads=args.ThreadsN))
+    if args.cmd == "compute":
+        exit(main(fcases=args.cases, fcontrol=args.controls, serializedObject=args.serialized_bin, threads=args.ThreadsN,
+                  base_data=args.base_data))
