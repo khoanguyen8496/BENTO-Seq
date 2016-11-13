@@ -27,7 +27,6 @@ def index(falls, serializedObject="/raid/ptdtan/splicing_db.bin", threads=20):
     """
     if not os.path.exists(falls):
         falls = falls.strip().split(",")
-        falls = [f.split("/")[1] for f in falls]
         Oall = batch_parser(falls, threads=threads)
     else:
         Oall = batch_parser(open(falls).read().strip().split("\n"), threads=threads)
