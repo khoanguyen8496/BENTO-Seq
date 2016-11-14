@@ -25,11 +25,7 @@ def index(falls, serializedObject="/raid/ptdtan/splicing_db.bin", threads=20):
     :param serializedObject:
     :return:
     """
-    if not os.path.exists(falls):
-        falls = falls.strip().split(",")
-        Oall = batch_parser(falls, threads=threads)
-    else:
-        Oall = batch_parser(open(falls).read().strip().split("\n"), threads=threads)
+    Oall = batch_parser(open(falls).read().strip().split("\n"), threads=threads)
     pickle.dump(Oall, open(serializedObject, "wb"))
     pass
 
@@ -124,7 +120,7 @@ def main(fcases, fcontrols,serializedObject=None,
         if not any([os.path.exists(f) for f in [fcontrols, fcases]]):
             fcases, fcontrols = fcontrols.strip().split(","), fcases.strip().split(",")
             return fcases, fcontrols
-        fcases, fcontrols = open(fcontrols).read().strip().split("\n"), open(fcases).read().strip().split("\n")
+        fcases, fcontrols = open(fcases).read().strip().split("\n"), open(fcontrols).read().strip().split("\n")
         return fcases, fcontrols
     def _isSerialied(serializedObject, cases, controls):
         """
@@ -195,7 +191,7 @@ def write_data(base_Data, fileOut="splicing_result.tsv"):
     fout = open(fileOut, "w")
     fout.write("gene\ttriplet\tstrand\tC1_start\tC1_end\tA_start\tA_end\tC2_start\tC2_end\tPSI_mean_1\tPSI_mean_2\tdistance\tz-score\tp_val\tp_adjs\tx\ty\n")
     for key, value in base_Data.items():
-        fout.write("%s\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\n" %(value["gene"], value["triplet"], value["strand"], value["C1_start"], value["C1_end"], value["A_start"], value["A_end"], value["C2_start"], value["C2_end"], value["PSI_mean"][1], value["PSI_mean"][2], value["distance"], value["z-score"], value["p_val"], value["p_adjs"], value["x"], value["y"]))
+        fout.write("%s\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%.5f\t%.5f\t%.5f\t%.5f\t%e\t%e\t%.5f\t%.5f\n" %(value["gene"], value["triplet"], value["strand"], value["C1_start"], value["C1_end"], value["A_start"], value["A_end"], value["C2_start"], value["C2_end"], value["PSI_mean"][1], value["PSI_mean"][2], value["distance"], value["z-score"], value["p_val"], value["p_adjs"], value["x"], value["y"]))
 if __name__ == "__main__":
     main_parser = argparse.ArgumentParser(description='Zeus - Different exons splicing comparison')
     subparsers = main_parser.add_subparsers(help='Zeus Utilities', dest="cmd")
