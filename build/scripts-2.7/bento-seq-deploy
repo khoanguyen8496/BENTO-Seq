@@ -1,0 +1,217 @@
+#!/usr/bin/python
+
+import sys, argparse, pysam, logging, datetime
+from scipy.integrate import simps
+from bento_seq import BENTOSeqError
+from bento_seq.alt_splice_event import AltSpliceEvent
+from bento_seq.load_as_event_data import open_event_file, fetch, count_lines
+import threading
+import bento_seq.multithreading as mt
+# def _warning(
+#     message,
+#     category = UserWarning,
+#     filename = '',
+#     lineno = -1):
+#     """Make warnings a little cleaner."""
+#     print(message)
+
+# warnings.showwarning = _warning
+
+PSILOCK = threading.Lock()
+class EventPools(object):
+    """
+    Pool of splice events
+    """
+    def __init__(self, bamfiles):
+        """
+        initializer of a set of events
+        """
+        self.bamfiles = bamfiles
+    def __call__(self, event):
+        return _process_event((event, self.bamfiles))
+def run_bootstrap():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('event_definitions',
+                        help="Alternative splicing event definitions file. "
+                        "This may either be one of the genome identifiers "
+                        "'hg19, hg38, mm9, or mm10 - or a relative path to "
+                        "an event definition file. "
+                        "(See http://github.com/xxxx for an example and "
+                        "formatting instructions.)")
+    parser.add_argument('--output_file', '-O',
+                        help="Name of the file where "
+                        "the output should be stored. If the file "
+                        "exists, it will be overwritten.")
+
+    parser.add_argument('--bam_files', '-B', nargs='+',
+                        help="One or multiple bam-files with aligned reads from either the "
+                        "TopHat or the STAR read alignmnent tool. Must be a "
+                        "binary and indexed bam-file (.bam file extension "
+                        "and a .bai index file must be present in the "
+                        "same directory.)")
+
+    parser.add_argument('-0', '--zero-based-coordinates',
+                        action='store_true', help="Use this option when "
+                        "the coordinates in your event file use "
+                        "zero-based indexing. Otherwise, "
+                        "one-based indexing is used (UCSC-style).")
+
+    parser.add_argument('-v', '--verbose',
+                        action='store_true',
+                        help="Print all warnings and messages.")
+
+    parser.add_argument('-q', '--quiet',
+                        action='store_true',
+                        help="Suppress all warnings and messages. "
+                             "Ignored if '--verbose' is supplied'")
+
+    parser.add_argument('-nm', '--max-edit-distance',
+                        help="(default=2) The maximum edit distance or "
+                        "number of mismatches allowed for a read. If "
+                        "the edit distance is greater than this, the "
+                        "read will not be counted towards the read  "
+                        "distribution. The edit distance is the number "
+                        "of insertions, deletions, or substitutions "
+                        "required to match the read to the consensus "
+                        "sequence (reference genome). The edit "
+                        "distance corresponds to the 'NM' tag in "
+                        "bam-files created with TopHat and the 'nM' in "
+                        "files created with SAM.", type=int, default=2)
+
+    parser.add_argument('-nh', '--max-num-mapped-loci',
+                        help="(default=1) The maximum number of loci "
+                        "(genome locations) that a read "
+                        "is allowed to be mapped to. If the number of "
+                        "loci the read is mapped to is greater than "
+                        "this, the the read will not be counted towards "
+                        "the read distribution. By default, only "
+                        "uniquely mapped reads are considered "
+                        "(--max-num-mapped-loci=1). The number of "
+                        "mapped loci is given by the 'NH' tag in the "
+                        "bam-file.", type=int, default=1)
+
+    parser.add_argument('-oh', '--min-overhang',
+                        help="(default=5) The minimum overhang of a read "
+                        "on either side of the splice junction to be "
+                        "considered for the read distribution. By default "
+                        "a read must have a 5nt overhang on either side of "
+                        "the splice junction to be counted.",
+                        type=int, default=8)
+
+    parser.add_argument('-S', '--n-bootstrap-samples',
+                        help="(default=1000) The number of bootstrap  "
+                        "samples to draw for each event. More bootstrap "
+                        "samples will better estimate the bootstrap "
+                        "probability density function, but will need "
+                        "more memory and will take longer to compute.",
+                        type=int, default=1000)
+
+    parser.add_argument('-G', '--n-grid-points',
+                        help="(default=100) The number of points "
+                        "used for the numerical approximation of the "
+                        "bootstrap probability density function. More "
+                        "points will better estimate the bootstrap "
+                        "probability density function, but will need "
+                        "more memory and will take longer to compute.",
+                        type=int, default=1000)
+
+    parser.add_argument('-a', help="(default=1) Bayesian pseudo-count "
+                        "for inclusion reads. See http://github.com/xxx "
+                        "for details.", type=int, default=1)
+
+    parser.add_argument('-b', help="(default=1) Bayesian pseudo-count "
+                        "for exclusion reads. See http://github.com/xxx "
+                        "for details.", type=int, default=1)
+
+    parser.add_argument('-r', help="(default=0) Bayesian pseudo-count "
+                        "for numerical integration of bootstrap "
+                        "probability density function. See "
+                        "http://github.com/xxx for details.", type=int,
+                        default=1)
+    parser.add_argument('-t', help="default=8 , n threads", type=int, default=8)
+    args = parser.parse_args()
+    FORMAT = '%(message)s'
+    if args.verbose:
+        logging.basicConfig(level='DEBUG')
+    elif args.quiet:
+        logging.basicConfig(level="ERROR")
+    else:
+        logging.basicConfig(level='INFO', format=FORMAT)
+    process_event_file(args)
+
+def process_event_file(args):
+    start_t = datetime.datetime.now()
+    try:
+        event_filename = fetch(args.event_definitions)
+    except KeyError:
+        event_filename = args.event_definitions
+    n_events = count_lines(event_filename, '#')
+    logging.info("Processing %d splicing events in %s." % (n_events, args.event_definitions))
+    with open_event_file(args.event_definitions) as f:
+        output_file = open(args.output_file, 'w')
+        global bamfiles
+        global psi_pool
+        psi_pool = {}
+        bamfiles = [pysam.Samfile(bamfile, check_header=False) for bamfile in args.bam_files]
+        # Write header
+        output_file.write(
+        '\t'.join(('#ID', 'n_inc', 'n_exc', 'p_inc', 'p_exc', 'PSI_standard',
+                   'PSI_bootstrap', 'PSI_bootstrap_std', 'PSI_first', 'PSI_second', 'PSI_third')) + '\n')
+        event_pool = []
+        for i_event, line in enumerate(f):
+            if not i_event % 1000:
+                logging.info("Processed %d/%d events." % (i_event, n_events))
+            line = line.rstrip()
+            if line.startswith('#') or not line: continue
+            elements = line.split('\t')
+            event_type, event_id, chromosome, strand = elements[:4]
+            if event_type.upper() != 'MXE':
+                exons = [tuple(map(int, e.split(':'))) for e in elements[4:7]]
+            else:
+                exons = [tuple(map(int, e.split(':'))) for e in elements[4:8]]
+
+            try:
+                event = AltSpliceEvent(event_type, event_id, chromosome,
+                                       strand, exons,
+                                       one_based_pos=not args.zero_based_coordinates,
+                                       min_overhang= args.min_overhang,
+                                       max_edit_distance=args.max_edit_distance,
+                                       max_num_mapped_loci=args.max_num_mapped_loci)
+                #event.build_read_distribution()
+                #seralizer = open("event_splicing_seralized", "w")
+                #pickle.dump(event, seralizer)
+                #psi_event = event.bootstrap_event() #use default parameters, edit in-line in code if needed
+                event_pool.append(event)
+            except BENTOSeqError as e:
+                logging.info("Input error in line %d: skipping event." % (i_event + 1))
+                logging.debug(e)
+
+        thread_pools = mt.ThreadPool(args.t)
+        #with closing(Pool(processes=args.t)) as pool:
+        #    psi_event_pool = pool.map(event_bam_pool, event_pool)
+        #    pool.close()
+        #    pool.terminate()
+
+        for e in event_pool:
+            thread_pools.add_task(_process_event, e)
+        thread_pools.wait_completion()
+        for psi_event, psi in psi_pool.items():
+            if psi_event != None:
+                output_file.write(
+                    '\t'.join([psi_event] + map(str, psi)) + '\n')
+        output_file.close()
+        logging.info("Output written to file '%s'." % args.output_file)
+        runtime = datetime.datetime.now() - start_t
+        logging.info("Processed %d events in %.2f seconds." % (n_events, runtime.total_seconds()))
+
+def _process_event(event):
+    try:
+        event.build_read_distribution(bamfiles=bamfiles)
+        with PSILOCK:
+            psi_pool[event.event_id] = event.bootstrap_event()
+    except BENTOSeqError as err:
+        logging.info("Error at event id: %s" %event.event_id)
+        logging.debug(err)
+    pass
+if __name__ == '__main__':
+    sys.exit(run_bootstrap())
