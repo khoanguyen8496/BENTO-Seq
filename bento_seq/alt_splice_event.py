@@ -43,7 +43,16 @@ class AltSpliceEvent(object):
     """
 
 
-    def __init__(self, event_type, event_id, chromosome, strand, exons, one_based_pos=False):
+    def __init__(self, event_type,
+                        event_id,
+                        chromosome,
+                        strand,
+                        exons,
+                        bamfiles=None,
+                        min_overhang=None,
+                        max_edit_distance=None,
+                        max_num_mapped_loci=None,
+                        one_based_pos=False):
         event_type = event_type.upper()
 
         if event_type not in ('CAS', 'A5SS', 'A3SS', 'MXE', 'AFE', 'ALE', 'SPR'):
@@ -66,7 +75,7 @@ class AltSpliceEvent(object):
         self.chromosome = chromosome
         self.strand = strand
         self.exons = exons
-
+        self.bamfiles = bamfiles
         if one_based_pos:
             self.exons = [(e[0] - 1, e[1]) for e in self.exons]
 
@@ -162,7 +171,7 @@ class AltSpliceEvent(object):
             alowed.
 
         """
-
+        #bamfiles = self.bamfiles
         self.junction_read_distributions = []
         for junction in self.junctions:
             read_distribution = \
