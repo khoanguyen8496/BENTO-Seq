@@ -140,12 +140,11 @@ class ReadDistribution(object):
         chromosome, junction_start, junction_end = junction
         read_length = bamfiles[0].next().rlen
         read_distribution = cls(chromosome, junction_start, junction_end, read_length)
-
         for bamfile in bamfiles:
-            for read in bamfile.fetch(chromosome, junction_start, junction_start + 1):
+            for read in bamfile.fetch(chromosome, junction_start, junction_start + 1, multiple_iterators=True):
+
                 # Skip reads without junctions
                 if not has_junction.search(read.cigarstring): continue
-
                 read_junctions = [(read.blocks[i][1], read.blocks[i + 1][0])
                                   for i in range(len(read.blocks) - 1)]
 
@@ -238,5 +237,4 @@ class ReadDistribution(object):
                 rel_pos = -sum(block_sizes[:(junction_idx + 1)])
 
                 read_distribution.inc(rel_pos, read)
-
         return read_distribution

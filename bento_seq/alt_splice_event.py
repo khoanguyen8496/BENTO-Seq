@@ -48,10 +48,6 @@ class AltSpliceEvent(object):
                         chromosome,
                         strand,
                         exons,
-                        bamfiles=None,
-                        min_overhang=None,
-                        max_edit_distance=None,
-                        max_num_mapped_loci=None,
                         one_based_pos=False):
         event_type = event_type.upper()
 
@@ -75,7 +71,6 @@ class AltSpliceEvent(object):
         self.chromosome = chromosome
         self.strand = strand
         self.exons = exons
-        self.bamfiles = bamfiles
         if one_based_pos:
             self.exons = [(e[0] - 1, e[1]) for e in self.exons]
 
